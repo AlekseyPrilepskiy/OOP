@@ -1,31 +1,32 @@
-﻿using System.ComponentModel.Design;
-
-namespace ConsoleApp7
+namespace ConsoleApp1
 {
     internal class Program
     {
         static void Main(string[] args)
         {
+            DetailsGenerator detailsGenerator = new DetailsGenerator();
             BrokenCarsGenerator brokenCarsGenerator = new BrokenCarsGenerator();
-            Autoservice autoservice = new Autoservice(brokenCarsGenerator);
+            CellsGenerator cellsGenerator = new CellsGenerator();
+
+            Autoservice autoservice = new Autoservice(brokenCarsGenerator, detailsGenerator, cellsGenerator);
             autoservice.Work();
         }
     }
 
     class Detail
     {
-        public Detail(string name)
+        public Detail(Details name)
         {
             Name = name;
-            IsGood = true;
+            IsBroken = true;
         }
 
-        public string Name { get; private set; }
-        public bool IsGood { get; private set; }
+        public Details Name { get; private set; }
+        public bool IsBroken { get; private set; }
 
-        public void Damaged()
+        public void Break()
         {
-            IsGood = false;
+            IsBroken = false;
         }
 
         public void ShowInfo()
@@ -33,7 +34,7 @@ namespace ConsoleApp7
             string conditionServiceable = "Исправный";
             string conditionBroken = "Сломанный";
 
-            if (IsGood)
+            if (IsBroken)
             {
                 Console.WriteLine($"Деталь: {Name}. Состояние: {conditionServiceable}");
             }
@@ -44,17 +45,30 @@ namespace ConsoleApp7
         }
     }
 
+    class DetailsGenerator
+    {
+        public List<Detail> Generate()
+        {
+            List<Detail> details = new List<Detail>()
+            {
+                new Detail(Details.Двигатель),
+                new Detail(Details.Трансмиссия),
+                new Detail(Details.Тормоза),
+                new Detail(Details.Подвеска),
+                new Detail(Details.Бензобак)
+            };
+
+            return details;
+        }
+    }
+
     class Car
     {
         private List<Detail> _details = new List<Detail>();
 
-        public Car()
+        public Car(DetailsGenerator detailsGenerator)
         {
-            _details.Add(new Detail("Двигатель"));
-            _details.Add(new Detail("Трансмиссия"));
-            _details.Add(new Detail("Тормоза"));
-            _details.Add(new Detail("Подвеска"));
-            _details.Add(new Detail("Топливный бак"));
+            _details = detailsGenerator.Generate();
         }
 
         public void ShowInfo()
@@ -69,20 +83,20 @@ namespace ConsoleApp7
             Console.WriteLine();
         }
 
-        public bool InspectDetailCondition(string name)
+        public bool InspectDetailCondition(Details name)
         {
             int index = 9;
 
             for (int i = 0; i < _details.Count; i++)
             {
-                if (name.ToUpper() == _details[i].Name.ToUpper())
+                if (name == _details[i].Name)
                 {
                     index = i;
                     break;
                 }
             }
 
-            return _details[index].IsGood;
+            return _details[index].IsBroken;
         }
 
         public int ReceiveBadDetailsCount()
@@ -91,7 +105,7 @@ namespace ConsoleApp7
 
             foreach (Detail detail in _details)
             {
-                if (detail.IsGood == false)
+                if (detail.IsBroken == false)
                 {
                     count++;
                 }
@@ -100,7 +114,7 @@ namespace ConsoleApp7
             return count;
         }
 
-        public void TakeNewDetail(Detail newDetail)
+        public void ChangeDetail(Detail newDetail)
         {
             for (int i = 0; i < _details.Count; i++)
             {
@@ -120,9 +134,9 @@ namespace ConsoleApp7
             {
                 randomIndex = UserUtils.GenerateRandomNumber(0, _details.Count - 1);
 
-                if (_details[randomIndex].IsGood != false)
+                if (_details[randomIndex].IsBroken != false)
                 {
-                    _details[randomIndex].Damaged();
+                    _details[randomIndex].Break();
                     count--;
                 }
             }
@@ -131,7 +145,7 @@ namespace ConsoleApp7
 
     class BrokenCarsGenerator
     {
-        public List<Car> Generate()
+        public List<Car> Generate(DetailsGenerator detailsGenerator)
         {
             List<Car> cars = new List<Car>();
 
@@ -141,7 +155,7 @@ namespace ConsoleApp7
 
             for (int i = 0; i < count; i++)
             {
-                Car car = new Car();
+                Car car = new Car(detailsGenerator);
 
                 car.BreakDown();
                 cars.Add(car);
@@ -155,21 +169,21 @@ namespace ConsoleApp7
     {
         private List<Car> _brokenCars;
         private Warehouse _warehouse;
-        private Dictionary<string, int> _detailPriceList;
+        private Dictionary<Details, int> _detailPriceList;
         private Dictionary<string, int> _servisePriceList;
         private int _money;
 
-        public Autoservice(BrokenCarsGenerator brokenCars)
+        public Autoservice(BrokenCarsGenerator brokenCars, DetailsGenerator detailsGenerator, CellsGenerator cellsGenerator)
         {
-            _brokenCars = new List<Car>(brokenCars.Generate());
-            _warehouse = new Warehouse();
-            _detailPriceList = new Dictionary<string, int>
+            _brokenCars = new List<Car>(brokenCars.Generate(detailsGenerator));
+            _warehouse = new Warehouse(cellsGenerator);
+            _detailPriceList = new Dictionary<Details, int>
             {
-                {"ДВИГАТЕЛЬ", 300},
-                {"ТРАНСМИССИЯ", 120},
-                {"ТОРМОЗА", 80},
-                {"ПОДВЕСКА", 220},
-                {"ТОПЛИВНЫЙ БАК", 150},
+                {Details.Двигатель, 300},
+                {Details.Трансмиссия, 120},
+                {Details.Тормоза, 80},
+                {Details.Подвеска, 220},
+                {Details.Бензобак, 150}
             };
             _servisePriceList = new Dictionary<string, int>
             {
@@ -206,14 +220,16 @@ namespace ConsoleApp7
             const string CommandYes = "Y";
             const string CommandNo = "N";
 
+            const int CommandEndServise = 9;
+
             string[] commands = [CommandYes, CommandNo];
 
-            string repairServiseName = "Услуги по ремонту";
-            string penaltyForCanNotFixName = "Штраф за непочиненную деталь";
             string penaltyForRejectionName = "Штраф за отказ в ремонте";
 
             bool isService = true;
             bool isBadCondition = false;
+
+            Array detailsNames = Enum.GetValues(typeof(Details));
 
             Console.WriteLine();
             _warehouse.ShowInfo();
@@ -239,68 +255,34 @@ namespace ConsoleApp7
 
                     car.ShowInfo();
 
-                    Console.WriteLine($"Желаете провести замену детали? {CommandYes}/{CommandNo} (Да/Нет)");
-                    string userInput = Console.ReadLine();
+                    int userInput = ServiceCommand(detailsNames);
 
-                    while (commands.Contains(userInput.ToUpper()) == false)
+                    if (userInput > 0 && userInput <= _detailPriceList.Keys.Count)
                     {
-                        Console.Write("Повторите ввод снова: ");
-                        userInput = Console.ReadLine();
-                    }
+                        Details detailName = (Details)detailsNames.GetValue(userInput - 1);
 
-                    if (userInput.ToUpper() == CommandYes)
-                    {
-                        Console.WriteLine("Введите название детали для починки: ");
-                        string detailName = Console.ReadLine();
-                        detailName = detailName.ToUpper();
-
-                        if (_detailPriceList.ContainsKey(detailName))
+                        if (car.InspectDetailCondition(detailName) == isBadCondition)
                         {
-                            if (car.InspectDetailCondition(detailName) == isBadCondition)
-                            {
-                                Detail newDetail = _warehouse.GiveDetail(detailName);
+                            Detail newDetail = _warehouse.GiveDetail(detailName);
 
-                                if (newDetail != null)
-                                {
-                                    car.TakeNewDetail(newDetail);
-                                    _money += _detailPriceList[detailName] + _servisePriceList[repairServiseName];
-                                }
-                                else
-                                {
-                                    Console.WriteLine($"Деталь закончилась на складе. Ремонт невозможен. Штраф: {_servisePriceList[penaltyForCanNotFixName]}");
-                                    _money -= _servisePriceList[penaltyForCanNotFixName];
-
-                                    if (_money < 0)
-                                    {
-                                        Console.WriteLine("Пришлось брать в долг, чтобы выплтить деньги клиенту");
-                                        _money = 0;
-                                    }
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("Зачем чинить исправную деталь?");
-                            }
+                            SetDetailInCar(car, newDetail);
                         }
                         else
                         {
-                            Console.WriteLine("Таких деталей не существует. Проверьте правильность ввода");
+                            Console.WriteLine("Зачем чинить исправную деталь?");
                         }
                     }
-                    else
+                    else if (userInput == CommandEndServise)
                     {
                         isService = false;
 
                         Console.WriteLine("Ремонт данного автомобиля окончен.");
 
-                        if (car.ReceiveBadDetailsCount() > 0)
-                        {
-                            int overallPenalty = _servisePriceList[penaltyForCanNotFixName] * car.ReceiveBadDetailsCount();
-
-                            _money -= overallPenalty;
-
-                            Console.WriteLine($"Штраф за недоработку: {overallPenalty}");
-                        }
+                        VerifySuccessRateRepairing(car);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Неверная команда. Попробуйте снова.");
                     }
 
                     Console.WriteLine("Нажмите любую клавишу для продолжения.");
@@ -315,27 +297,84 @@ namespace ConsoleApp7
                 isService = false;
             }
         }
+
+        private void SetDetailInCar(Car car, Detail detail)
+        {
+            string repairServiseName = "Услуги по ремонту";
+            string penaltyForCanNotFixName = "Штраф за непочиненную деталь";
+
+            if (detail != null)
+            {
+                car.ChangeDetail(detail);
+
+                int profit = _detailPriceList[detail.Name] + _servisePriceList[repairServiseName];
+                _money += profit;
+
+                Console.WriteLine($"Деталь успешно установлена. Прибыль: {profit}");
+            }
+            else
+            {
+                Console.WriteLine($"Деталь закончилась на складе. Ремонт невозможен. Штраф: {_servisePriceList[penaltyForCanNotFixName]}");
+
+                _money -= _servisePriceList[penaltyForCanNotFixName];
+
+                if (_money < 0)
+                {
+                    Console.WriteLine("Пришлось брать в долг, чтобы выплтить деньги клиенту");
+                    _money = 0;
+                }
+            }
+        }
+
+        private void VerifySuccessRateRepairing(Car car)
+        {
+            string penaltyForCanNotFixName = "Штраф за непочиненную деталь";
+
+            if (car.ReceiveBadDetailsCount() > 0)
+            {
+                int overallPenalty = _servisePriceList[penaltyForCanNotFixName] * car.ReceiveBadDetailsCount();
+                _money -= overallPenalty;
+
+                Console.WriteLine($"Штраф за недоработку: {overallPenalty}");
+            }
+        }
+
+        private int ServiceCommand(Array details)
+        {
+            int number = 1;
+            int numberOfEnd = 9;
+
+            foreach (Details detail in details)
+            {
+                Console.WriteLine($"{number} - {detail}");
+                number++;
+            }
+
+            Console.WriteLine($"{numberOfEnd} - Закончить ремонт\n");
+            Console.WriteLine("Выберите деталь для замены или прекратите ремонт:");
+
+            int.TryParse(Console.ReadLine(), out int userCommand);
+
+            return userCommand;
+        }
     }
 
     class Warehouse
     {
-        private List<Detail> _details;
-        private List<int> _counts;
+        private List<Cell> _cells;
 
-        public Warehouse()
+        public Warehouse(CellsGenerator cellsGenerator)
         {
-            _details = new List<Detail> { new Detail("Двигатель"), new Detail("Трансмиссия"), new Detail("Тормоза"), new Detail("Подвеска"), new Detail("Топливный бак") };
-            _counts = new List<int> { 4, 4, 4, 4, 4 };
+            _cells = cellsGenerator.Generate();
         }
 
-        public Detail GiveDetail(string name)
+        public Detail GiveDetail(Details name)
         {
-            for (int i = 0; i < _details.Count; i++)
+            for (int i = 0; i < _cells.Count; i++)
             {
-                if (_details[i].Name.ToUpper() == name && _counts[i] != 0)
+                if (_cells[i].ShowName() == name && _cells[i]._count > 0)
                 {
-                    _counts[i]--;
-                    return new Detail(_details[i].Name);
+                    return _cells[i].GetOne();
                 }
             }
 
@@ -346,11 +385,68 @@ namespace ConsoleApp7
         {
             Console.WriteLine("Складские запасы:");
 
-            for (int i = 0; i < _details.Count; i++)
+            foreach (Cell cell in _cells)
             {
-                Console.WriteLine($"Деталь: {_details[i].Name} - {_counts[i]} штук осталось");
+                cell.ShowInfo();
             }
         }
+    }
+
+    class Cell
+    {
+        private Detail _detail;
+
+        public Cell(Detail detail, int count)
+        {
+            _detail = detail;
+            _count = count;
+        }
+
+        public int _count { get; private set; }
+
+        public Details ShowName()
+        {
+            return _detail.Name;
+        }
+
+        public void ShowInfo()
+        {
+            Console.WriteLine($"Деталь {_detail.Name} - осталось {_count} штук.");
+        }
+
+        public Detail GetOne()
+        {
+            _count--;
+
+            return _detail;
+        }
+    }
+
+    class CellsGenerator
+    {
+        public List<Cell> Generate()
+        {
+            int count = 4;
+            List<Cell> cells = new List<Cell>()
+            {
+            new Cell(new Detail(Details.Двигатель), count),
+            new Cell(new Detail(Details.Трансмиссия), count),
+            new Cell(new Detail(Details.Тормоза), count),
+            new Cell(new Detail(Details.Подвеска), count),
+            new Cell(new Detail(Details.Бензобак), count)
+            };
+
+            return cells;
+        }
+    }
+
+    enum Details
+    {
+        Двигатель,
+        Трансмиссия,
+        Тормоза,
+        Подвеска,
+        Бензобак
     }
 
     class UserUtils
