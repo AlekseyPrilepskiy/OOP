@@ -150,7 +150,7 @@ namespace ConsoleApp1
             List<Car> cars = new List<Car>();
 
             int minimalCount = 3;
-            int maximalCount = 6;
+            int maximalCount = 7;
             int count = UserUtils.GenerateRandomNumber(minimalCount, maximalCount);
 
             for (int i = 0; i < count; i++)
@@ -265,7 +265,7 @@ namespace ConsoleApp1
                         {
                             Detail newDetail = _warehouse.GiveDetail(detailName);
 
-                            SetDetailInCar(car, newDetail);
+                            isService = IsSetDetailInCar(car, newDetail);
                         }
                         else
                         {
@@ -298,7 +298,7 @@ namespace ConsoleApp1
             }
         }
 
-        private void SetDetailInCar(Car car, Detail detail)
+        private bool IsSetDetailInCar(Car car, Detail detail)
         {
             string repairServiseName = "Услуги по ремонту";
             string penaltyForCanNotFixName = "Штраф за непочиненную деталь";
@@ -311,10 +311,12 @@ namespace ConsoleApp1
                 _money += profit;
 
                 Console.WriteLine($"Деталь успешно установлена. Прибыль: {profit}");
+
+                return true;
             }
             else
             {
-                Console.WriteLine($"Деталь закончилась на складе. Ремонт невозможен. Штраф: {_servisePriceList[penaltyForCanNotFixName]}");
+                Console.WriteLine($"Деталь закончилась на складе. Дальнейший ремонт невозможен. Штраф: {_servisePriceList[penaltyForCanNotFixName]}");
 
                 _money -= _servisePriceList[penaltyForCanNotFixName];
 
@@ -323,6 +325,8 @@ namespace ConsoleApp1
                     Console.WriteLine("Пришлось брать в долг, чтобы выплтить деньги клиенту");
                     _money = 0;
                 }
+
+                return false;
             }
         }
 
@@ -370,12 +374,21 @@ namespace ConsoleApp1
 
         public Detail GiveDetail(Details name)
         {
+            int index = 0;
+            Detail detail;
+            bool isDetailExist;
+
             for (int i = 0; i < _cells.Count; i++)
             {
-                if (_cells[i].ShowName() == name && _cells[i]._count > 0)
+                if (_cells[i].ShowName() == name)
                 {
-                    return _cells[i].GetOne();
+                    index = i;
                 }
+            }
+
+            if (isDetailExist = _cells[index].TryGetOne(out detail) == true)
+            {
+                return detail;
             }
 
             return null;
@@ -395,14 +408,13 @@ namespace ConsoleApp1
     class Cell
     {
         private Detail _detail;
+        private int _count;
 
         public Cell(Detail detail, int count)
         {
             _detail = detail;
             _count = count;
         }
-
-        public int _count { get; private set; }
 
         public Details ShowName()
         {
@@ -414,11 +426,21 @@ namespace ConsoleApp1
             Console.WriteLine($"Деталь {_detail.Name} - осталось {_count} штук.");
         }
 
-        public Detail GetOne()
+        public bool TryGetOne(out Detail detail)
         {
-            _count--;
+            if (_count > 0)
+            {
+                _count--;
+                detail = _detail;
 
-            return _detail;
+                return true;
+            }
+            else
+            {
+                detail = null;
+
+                return false;
+            }
         }
     }
 
@@ -429,11 +451,11 @@ namespace ConsoleApp1
             int count = 4;
             List<Cell> cells = new List<Cell>()
             {
-            new Cell(new Detail(Details.Двигатель), count),
-            new Cell(new Detail(Details.Трансмиссия), count),
-            new Cell(new Detail(Details.Тормоза), count),
-            new Cell(new Detail(Details.Подвеска), count),
-            new Cell(new Detail(Details.Бензобак), count)
+                new Cell(new Detail(Details.Двигатель), count),
+                new Cell(new Detail(Details.Трансмиссия), count),
+                new Cell(new Detail(Details.Тормоза), count),
+                new Cell(new Detail(Details.Подвеска), count),
+                new Cell(new Detail(Details.Бензобак), count)
             };
 
             return cells;
