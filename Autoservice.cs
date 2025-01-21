@@ -386,7 +386,9 @@ namespace ConsoleApp1
                 }
             }
 
-            if (isDetailExist = _cells[index].TryGetOne(out detail) == true)
+            isDetailExist = _cells[index].TryGetOne(out detail);
+
+            if (isDetailExist == true)
             {
                 return detail;
             }
