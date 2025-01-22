@@ -236,7 +236,6 @@ namespace ConsoleApp7
                 Console.WriteLine($"Штраф за отказ в ремонте: {_servisePriceList[penaltyForRejectionName]}");
 
                 _money -= _servisePriceList[penaltyForRejectionName];
-                isService = false;
             }
         }
 
@@ -248,7 +247,7 @@ namespace ConsoleApp7
 
             if (car.IsDetailConditionBad(detailName) == isBadCondition)
             {
-                Detail newDetail = _warehouse.GiveDetail(detailName);
+                _warehouse.GiveDetail(detailName, out Detail newDetail);
 
                 isService = IsSetDetailInCar(car, newDetail);
             }
@@ -347,28 +346,27 @@ namespace ConsoleApp7
             _cells = new List<Cell>(cells);
         }
 
-        public Detail GiveDetail(DetailNames name)
+        public bool GiveDetail(DetailNames name, out Detail detail)
         {
             int index = 0;
-            Detail detail;
             bool isDetailExist;
 
             for (int i = 0; i < _cells.Count; i++)
             {
-                if (_cells[i].ShowName() == name)
+                if (_cells[i].Name == name)
                 {
                     index = i;
                 }
             }
 
-            isDetailExist = _cells[index].TryGetOne(out detail);
+            isDetailExist = _cells[index].TryGetDetail(out detail);
 
             if (isDetailExist == true)
             {
-                return detail;
+                return true;
             }
 
-            return null;
+            return false;
         }
 
         public void ShowInfo()
@@ -391,19 +389,17 @@ namespace ConsoleApp7
         {
             _detail = detail;
             _count = count;
+            Name = _detail.Name;
         }
 
-        public DetailNames ShowName()
-        {
-            return _detail.Name;
-        }
+        public DetailNames Name { get; private set; }
 
         public void ShowInfo()
         {
             Console.WriteLine($"Деталь {_detail.Name} - осталось {_count} штук.");
         }
 
-        public bool TryGetOne(out Detail detail)
+        public bool TryGetDetail(out Detail detail)
         {
             if (_count > 0)
             {
