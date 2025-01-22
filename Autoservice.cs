@@ -1,14 +1,12 @@
-namespace ConsoleApp1
+namespace ConsoleApp7
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            DetailsGenerator detailsGenerator = new DetailsGenerator();
-            BrokenCarsGenerator brokenCarsGenerator = new BrokenCarsGenerator();
-            CellsGenerator cellsGenerator = new CellsGenerator();
+            Generator generator = new Generator();
 
-            Autoservice autoservice = new Autoservice(brokenCarsGenerator, detailsGenerator, cellsGenerator);
+            Autoservice autoservice = new Autoservice(generator);
             autoservice.Work();
         }
     }
@@ -45,30 +43,13 @@ namespace ConsoleApp1
         }
     }
 
-    class DetailsGenerator
-    {
-        public List<Detail> Generate()
-        {
-            List<Detail> details = new List<Detail>()
-            {
-                new Detail(Details.Двигатель),
-                new Detail(Details.Трансмиссия),
-                new Detail(Details.Тормоза),
-                new Detail(Details.Подвеска),
-                new Detail(Details.Бензобак)
-            };
-
-            return details;
-        }
-    }
-
     class Car
     {
-        private List<Detail> _details = new List<Detail>();
+        private List<Detail> _details;
 
-        public Car(DetailsGenerator detailsGenerator)
+        public Car(List<Detail> details)
         {
-            _details = detailsGenerator.Generate();
+            _details = new List<Detail>(details);
         }
 
         public void ShowInfo()
@@ -143,28 +124,6 @@ namespace ConsoleApp1
         }
     }
 
-    class BrokenCarsGenerator
-    {
-        public List<Car> Generate(DetailsGenerator detailsGenerator)
-        {
-            List<Car> cars = new List<Car>();
-
-            int minimalCount = 3;
-            int maximalCount = 7;
-            int count = UserUtils.GenerateRandomNumber(minimalCount, maximalCount);
-
-            for (int i = 0; i < count; i++)
-            {
-                Car car = new Car(detailsGenerator);
-
-                car.BreakDown();
-                cars.Add(car);
-            }
-
-            return cars;
-        }
-    }
-
     class Autoservice
     {
         private List<Car> _brokenCars;
@@ -173,17 +132,17 @@ namespace ConsoleApp1
         private Dictionary<string, int> _servisePriceList;
         private int _money;
 
-        public Autoservice(BrokenCarsGenerator brokenCars, DetailsGenerator detailsGenerator, CellsGenerator cellsGenerator)
+        public Autoservice(Generator generator)
         {
-            _brokenCars = new List<Car>(brokenCars.Generate(detailsGenerator));
-            _warehouse = new Warehouse(cellsGenerator);
+            _brokenCars = new List<Car>(generator.GenerateCars());
+            _warehouse = new Warehouse(generator.GenerateCells());
             _detailPriceList = new Dictionary<Details, int>
             {
-                {Details.Двигатель, 300},
-                {Details.Трансмиссия, 120},
-                {Details.Тормоза, 80},
-                {Details.Подвеска, 220},
-                {Details.Бензобак, 150}
+                {Details.Engine, 300},
+                {Details.Transmission, 120},
+                {Details.Brakes, 80},
+                {Details.Suspension, 220},
+                {Details.FuelTank, 150}
             };
             _servisePriceList = new Dictionary<string, int>
             {
@@ -222,14 +181,11 @@ namespace ConsoleApp1
 
             const int CommandEndServise = 9;
 
-            string[] commands = [CommandYes, CommandNo];
-
             string penaltyForRejectionName = "Штраф за отказ в ремонте";
 
             bool isService = true;
-            bool isBadCondition = false;
 
-            Array detailsNames = Enum.GetValues(typeof(Details));
+            Details[] detailsNames = (Details[])Enum.GetValues(typeof(Details));
 
             Console.WriteLine();
             _warehouse.ShowInfo();
@@ -238,16 +194,9 @@ namespace ConsoleApp1
             Console.WriteLine("Информация о следующем в очереди автомобиле:");
             car.ShowInfo();
 
-            Console.Write($"Начать ремонт автомобиля? {CommandYes}/{CommandNo} (Да/Нет): ");
-            string userInputToServiceCar = Console.ReadLine();
+            string userCommand = InputUserCommand(CommandYes, CommandNo);
 
-            while (commands.Contains(userInputToServiceCar.ToUpper()) == false)
-            {
-                Console.Write("Повторите ввод снова: ");
-                userInputToServiceCar = Console.ReadLine();
-            }
-
-            if (userInputToServiceCar.ToUpper() == CommandYes)
+            if (userCommand.ToUpper() == CommandYes)
             {
                 while (isService)
                 {
@@ -255,22 +204,11 @@ namespace ConsoleApp1
 
                     car.ShowInfo();
 
-                    int userInput = ServiceCommand(detailsNames);
+                    int userInput = ServiceCommand(detailsNames, CommandEndServise);
 
                     if (userInput > 0 && userInput <= _detailPriceList.Keys.Count)
                     {
-                        Details detailName = (Details)detailsNames.GetValue(userInput - 1);
-
-                        if (car.InspectDetailCondition(detailName) == isBadCondition)
-                        {
-                            Detail newDetail = _warehouse.GiveDetail(detailName);
-
-                            isService = IsSetDetailInCar(car, newDetail);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Зачем чинить исправную деталь?");
-                        }
+                        Repair(car, userInput, detailsNames, isService);
                     }
                     else if (userInput == CommandEndServise)
                     {
@@ -296,6 +234,40 @@ namespace ConsoleApp1
                 _money -= _servisePriceList[penaltyForRejectionName];
                 isService = false;
             }
+        }
+
+        private void Repair(Car car, int userInput, Details[] detailsNames, bool isService)
+        {
+            bool isBadCondition = false;
+
+            Details detailName = (Details)detailsNames.GetValue(userInput - 1);
+
+            if (car.InspectDetailCondition(detailName) == isBadCondition)
+            {
+                Detail newDetail = _warehouse.GiveDetail(detailName);
+
+                isService = IsSetDetailInCar(car, newDetail);
+            }
+            else
+            {
+                Console.WriteLine("Зачем чинить исправную деталь?");
+            }
+        }
+
+        private string InputUserCommand(string command1, string command2)
+        {
+            string[] commands = [command1, command2];
+
+            Console.Write($"Начать ремонт автомобиля? {command1}/{command2} (Да/Нет): ");
+            string userCommand = Console.ReadLine();
+
+            while (commands.Contains(userCommand.ToUpper()) == false)
+            {
+                Console.Write("Повторите ввод снова: ");
+                userCommand = Console.ReadLine();
+            }
+
+            return userCommand;
         }
 
         private bool IsSetDetailInCar(Car car, Detail detail)
@@ -343,10 +315,9 @@ namespace ConsoleApp1
             }
         }
 
-        private int ServiceCommand(Array details)
+        private int ServiceCommand(Array details, int commandEnd)
         {
             int number = 1;
-            int numberOfEnd = 9;
 
             foreach (Details detail in details)
             {
@@ -354,7 +325,7 @@ namespace ConsoleApp1
                 number++;
             }
 
-            Console.WriteLine($"{numberOfEnd} - Закончить ремонт\n");
+            Console.WriteLine($"{commandEnd} - Закончить ремонт\n");
             Console.WriteLine("Выберите деталь для замены или прекратите ремонт:");
 
             int.TryParse(Console.ReadLine(), out int userCommand);
@@ -367,9 +338,9 @@ namespace ConsoleApp1
     {
         private List<Cell> _cells;
 
-        public Warehouse(CellsGenerator cellsGenerator)
+        public Warehouse(List<Cell> cells)
         {
-            _cells = cellsGenerator.Generate();
+            _cells = new List<Cell>(cells);
         }
 
         public Detail GiveDetail(Details name)
@@ -446,31 +417,64 @@ namespace ConsoleApp1
         }
     }
 
-    class CellsGenerator
+    class Generator
     {
-        public List<Cell> Generate()
+        public List<Cell> GenerateCells()
         {
             int count = 4;
             List<Cell> cells = new List<Cell>()
             {
-                new Cell(new Detail(Details.Двигатель), count),
-                new Cell(new Detail(Details.Трансмиссия), count),
-                new Cell(new Detail(Details.Тормоза), count),
-                new Cell(new Detail(Details.Подвеска), count),
-                new Cell(new Detail(Details.Бензобак), count)
+                new Cell(new Detail(Details.Engine), count),
+                new Cell(new Detail(Details.Transmission), count),
+                new Cell(new Detail(Details.Brakes), count),
+                new Cell(new Detail(Details.Suspension), count),
+                new Cell(new Detail(Details.FuelTank), count)
             };
 
             return cells;
+        }
+
+        public List<Car> GenerateCars()
+        {
+            List<Car> cars = new List<Car>();
+
+            int minimalCount = 3;
+            int maximalCount = 7;
+            int count = UserUtils.GenerateRandomNumber(minimalCount, maximalCount);
+
+            for (int i = 0; i < count; i++)
+            {
+                Car car = new Car(GenerateDetails());
+
+                car.BreakDown();
+                cars.Add(car);
+            }
+
+            return cars;
+        }
+
+        private List<Detail> GenerateDetails()
+        {
+            List<Detail> details = new List<Detail>()
+            {
+                new Detail(Details.Engine),
+                new Detail(Details.Transmission),
+                new Detail(Details.Brakes),
+                new Detail(Details.Suspension),
+                new Detail(Details.FuelTank)
+            };
+
+            return details;
         }
     }
 
     enum Details
     {
-        Двигатель,
-        Трансмиссия,
-        Тормоза,
-        Подвеска,
-        Бензобак
+        Engine,
+        Transmission,
+        Brakes,
+        Suspension,
+        FuelTank
     }
 
     class UserUtils
