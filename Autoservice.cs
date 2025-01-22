@@ -13,33 +13,36 @@ namespace ConsoleApp7
 
     class Detail
     {
-        public Detail(Details name)
+        public Detail(DetailNames name)
         {
             Name = name;
-            IsBroken = true;
+            IsBroken = false;
         }
 
-        public Details Name { get; private set; }
+        public DetailNames Name { get; private set; }
         public bool IsBroken { get; private set; }
 
         public void Break()
         {
-            IsBroken = false;
+            IsBroken = true;
         }
 
         public void ShowInfo()
         {
             string conditionServiceable = "Исправный";
             string conditionBroken = "Сломанный";
+            string condition;
 
             if (IsBroken)
             {
-                Console.WriteLine($"Деталь: {Name}. Состояние: {conditionServiceable}");
+                condition = conditionBroken;
             }
             else
             {
-                Console.WriteLine($"Деталь: {Name}. Состояние: {conditionBroken}");
+                condition = conditionServiceable;
             }
+
+            Console.WriteLine($"Деталь: {Name}. Состояние: {condition}");
         }
     }
 
@@ -64,7 +67,7 @@ namespace ConsoleApp7
             Console.WriteLine();
         }
 
-        public bool InspectDetailCondition(Details name)
+        public bool IsDetailConditionBad(DetailNames name)
         {
             int index = 9;
 
@@ -80,13 +83,13 @@ namespace ConsoleApp7
             return _details[index].IsBroken;
         }
 
-        public int ReceiveBadDetailsCount()
+        public int GiveBadDetailsCount()
         {
             int count = 0;
 
             foreach (Detail detail in _details)
             {
-                if (detail.IsBroken == false)
+                if (detail.IsBroken == true)
                 {
                     count++;
                 }
@@ -102,6 +105,7 @@ namespace ConsoleApp7
                 if (newDetail.Name == _details[i].Name)
                 {
                     _details[i] = newDetail;
+                    break;
                 }
             }
         }
@@ -115,7 +119,7 @@ namespace ConsoleApp7
             {
                 randomIndex = UserUtils.GenerateRandomNumber(0, _details.Count - 1);
 
-                if (_details[randomIndex].IsBroken != false)
+                if (_details[randomIndex].IsBroken != true)
                 {
                     _details[randomIndex].Break();
                     count--;
@@ -128,7 +132,7 @@ namespace ConsoleApp7
     {
         private List<Car> _brokenCars;
         private Warehouse _warehouse;
-        private Dictionary<Details, int> _detailPriceList;
+        private Dictionary<DetailNames, int> _detailPriceList;
         private Dictionary<string, int> _servisePriceList;
         private int _money;
 
@@ -136,13 +140,13 @@ namespace ConsoleApp7
         {
             _brokenCars = new List<Car>(generator.GenerateCars());
             _warehouse = new Warehouse(generator.GenerateCells());
-            _detailPriceList = new Dictionary<Details, int>
+            _detailPriceList = new Dictionary<DetailNames, int>
             {
-                {Details.Engine, 300},
-                {Details.Transmission, 120},
-                {Details.Brakes, 80},
-                {Details.Suspension, 220},
-                {Details.FuelTank, 150}
+                {DetailNames.Engine, 300},
+                {DetailNames.Transmission, 120},
+                {DetailNames.Brakes, 80},
+                {DetailNames.Suspension, 220},
+                {DetailNames.FuelTank, 150}
             };
             _servisePriceList = new Dictionary<string, int>
             {
@@ -185,7 +189,7 @@ namespace ConsoleApp7
 
             bool isService = true;
 
-            Details[] detailsNames = (Details[])Enum.GetValues(typeof(Details));
+            DetailNames[] detailsNames = (DetailNames[])Enum.GetValues(typeof(DetailNames));
 
             Console.WriteLine();
             _warehouse.ShowInfo();
@@ -236,13 +240,13 @@ namespace ConsoleApp7
             }
         }
 
-        private void Repair(Car car, int userInput, Details[] detailsNames, bool isService)
+        private void Repair(Car car, int userInput, DetailNames[] detailsNames, bool isService)
         {
-            bool isBadCondition = false;
+            bool isBadCondition = true;
 
-            Details detailName = (Details)detailsNames.GetValue(userInput - 1);
+            DetailNames detailName = (DetailNames)detailsNames.GetValue(userInput - 1);
 
-            if (car.InspectDetailCondition(detailName) == isBadCondition)
+            if (car.IsDetailConditionBad(detailName) == isBadCondition)
             {
                 Detail newDetail = _warehouse.GiveDetail(detailName);
 
@@ -306,9 +310,9 @@ namespace ConsoleApp7
         {
             string penaltyForCanNotFixName = "Штраф за непочиненную деталь";
 
-            if (car.ReceiveBadDetailsCount() > 0)
+            if (car.GiveBadDetailsCount() > 0)
             {
-                int overallPenalty = _servisePriceList[penaltyForCanNotFixName] * car.ReceiveBadDetailsCount();
+                int overallPenalty = _servisePriceList[penaltyForCanNotFixName] * car.GiveBadDetailsCount();
                 _money -= overallPenalty;
 
                 Console.WriteLine($"Штраф за недоработку: {overallPenalty}");
@@ -319,7 +323,7 @@ namespace ConsoleApp7
         {
             int number = 1;
 
-            foreach (Details detail in details)
+            foreach (DetailNames detail in details)
             {
                 Console.WriteLine($"{number} - {detail}");
                 number++;
@@ -343,7 +347,7 @@ namespace ConsoleApp7
             _cells = new List<Cell>(cells);
         }
 
-        public Detail GiveDetail(Details name)
+        public Detail GiveDetail(DetailNames name)
         {
             int index = 0;
             Detail detail;
@@ -389,7 +393,7 @@ namespace ConsoleApp7
             _count = count;
         }
 
-        public Details ShowName()
+        public DetailNames ShowName()
         {
             return _detail.Name;
         }
@@ -424,11 +428,11 @@ namespace ConsoleApp7
             int count = 4;
             List<Cell> cells = new List<Cell>()
             {
-                new Cell(new Detail(Details.Engine), count),
-                new Cell(new Detail(Details.Transmission), count),
-                new Cell(new Detail(Details.Brakes), count),
-                new Cell(new Detail(Details.Suspension), count),
-                new Cell(new Detail(Details.FuelTank), count)
+                new Cell(new Detail(DetailNames.Engine), count),
+                new Cell(new Detail(DetailNames.Transmission), count),
+                new Cell(new Detail(DetailNames.Brakes), count),
+                new Cell(new Detail(DetailNames.Suspension), count),
+                new Cell(new Detail(DetailNames.FuelTank), count)
             };
 
             return cells;
@@ -457,18 +461,18 @@ namespace ConsoleApp7
         {
             List<Detail> details = new List<Detail>()
             {
-                new Detail(Details.Engine),
-                new Detail(Details.Transmission),
-                new Detail(Details.Brakes),
-                new Detail(Details.Suspension),
-                new Detail(Details.FuelTank)
+                new Detail(DetailNames.Engine),
+                new Detail(DetailNames.Transmission),
+                new Detail(DetailNames.Brakes),
+                new Detail(DetailNames.Suspension),
+                new Detail(DetailNames.FuelTank)
             };
 
             return details;
         }
     }
 
-    enum Details
+    enum DetailNames
     {
         Engine,
         Transmission,
