@@ -212,7 +212,7 @@ namespace ConsoleApp7
 
                     if (userInput > 0 && userInput <= _detailPriceList.Keys.Count)
                     {
-                        Repair(car, userInput, detailsNames, isService);
+                        Repair(car, userInput, detailsNames, ref isService);
                     }
                     else if (userInput == CommandEndServise)
                     {
@@ -239,7 +239,7 @@ namespace ConsoleApp7
             }
         }
 
-        private void Repair(Car car, int userInput, DetailNames[] detailsNames, bool isService)
+        private void Repair(Car car, int userInput, DetailNames[] detailsNames, ref bool isService)
         {
             bool isBadCondition = true;
 
