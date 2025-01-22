@@ -241,15 +241,28 @@ namespace ConsoleApp7
 
         private void Repair(Car car, int userInput, DetailNames[] detailsNames, ref bool isService)
         {
-            bool isBadCondition = true;
-
             DetailNames detailName = (DetailNames)detailsNames.GetValue(userInput - 1);
 
-            if (car.IsDetailConditionBad(detailName) == isBadCondition)
+            if (car.IsDetailConditionBad(detailName))
             {
-                _warehouse.GiveDetail(detailName, out Detail newDetail);
+                if (_warehouse.GiveDetail(detailName, out Detail newDetail))
+                {
+                    SetDetailInCar(car, newDetail);
+                }
+                else
+                {
+                    Console.WriteLine($"Деталь закончилась на складе. Дальнейший ремонт невозможен.");
 
-                isService = IsSetDetailInCar(car, newDetail);
+                    VerifySuccessRateRepairing(car);
+
+                    if (_money < 0)
+                    {
+                        Console.WriteLine("Пришлось брать в долг, чтобы выплтить деньги клиенту");
+                        _money = 0;
+                    }
+
+                    isService = false;
+                }
             }
             else
             {
@@ -273,36 +286,16 @@ namespace ConsoleApp7
             return userCommand;
         }
 
-        private bool IsSetDetailInCar(Car car, Detail detail)
+        private void SetDetailInCar(Car car, Detail detail)
         {
             string repairServiseName = "Услуги по ремонту";
-            string penaltyForCanNotFixName = "Штраф за непочиненную деталь";
 
-            if (detail != null)
-            {
-                car.ChangeDetail(detail);
+            car.ChangeDetail(detail);
 
-                int profit = _detailPriceList[detail.Name] + _servisePriceList[repairServiseName];
-                _money += profit;
+            int profit = _detailPriceList[detail.Name] + _servisePriceList[repairServiseName];
+            _money += profit;
 
-                Console.WriteLine($"Деталь успешно установлена. Прибыль: {profit}");
-
-                return true;
-            }
-            else
-            {
-                Console.WriteLine($"Деталь закончилась на складе. Дальнейший ремонт невозможен. Штраф: {_servisePriceList[penaltyForCanNotFixName]}");
-
-                _money -= _servisePriceList[penaltyForCanNotFixName];
-
-                if (_money < 0)
-                {
-                    Console.WriteLine("Пришлось брать в долг, чтобы выплтить деньги клиенту");
-                    _money = 0;
-                }
-
-                return false;
-            }
+            Console.WriteLine($"Деталь успешно установлена. Прибыль: {profit}");
         }
 
         private void VerifySuccessRateRepairing(Car car)
@@ -318,7 +311,7 @@ namespace ConsoleApp7
             }
         }
 
-        private int ServiceCommand(Array details, int commandEnd)
+        private int ServiceCommand(DetailNames[] details, int commandEnd)
         {
             int number = 1;
 
@@ -349,7 +342,6 @@ namespace ConsoleApp7
         public bool GiveDetail(DetailNames name, out Detail detail)
         {
             int index = 0;
-            bool isDetailExist;
 
             for (int i = 0; i < _cells.Count; i++)
             {
@@ -359,9 +351,7 @@ namespace ConsoleApp7
                 }
             }
 
-            isDetailExist = _cells[index].TryGetDetail(out detail);
-
-            if (isDetailExist == true)
+            if (_cells[index].TryGetDetail(out detail))
             {
                 return true;
             }
