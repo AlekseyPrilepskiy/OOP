@@ -46,9 +46,7 @@ namespace ConsoleApp10
 
         public void Amnesty(string crime)
         {
-            var updatedCriminals = _criminals.Where(criminal => criminal.Crime != crime).Select(criminal => criminal).ToList();
-
-            _criminals = new List<Criminal>(updatedCriminals);
+            _criminals = _criminals.Where(criminal => criminal.Crime != crime).ToList();
         }
     }
 
