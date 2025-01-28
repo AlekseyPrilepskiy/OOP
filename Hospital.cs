@@ -93,12 +93,12 @@ namespace ConsoleApp10
 
             var patientsWithIll = _patients.Where(patient => patient.Ilness.ToUpper() == ill).ToList();
 
-            foreach ( var patient in patientsWithIll)
+            foreach (var patient in patientsWithIll)
             {
                 patient.ShowInfo();
             }
 
-            if(patientsWithIll.Count == 0)
+            if (patientsWithIll.Count == 0)
             {
                 Console.WriteLine("Пациентов с этой болезнью не найдено.");
             }
