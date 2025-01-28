@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Cryptography;
 
@@ -37,7 +37,7 @@ namespace ConsoleApp10
             while (isWork)
             {
                 Console.WriteLine("Список больных:\n");
-                ShowInfo();
+                ShowInfo(_patients);
 
                 Console.WriteLine($"{CommandSortByName} - Отсортировать по имени.");
                 Console.WriteLine($"{CommandSortByAge} - Отсортировать по возрасту.");
@@ -78,12 +78,16 @@ namespace ConsoleApp10
 
         private void SortByName()
         {
-            _patients = _patients.OrderBy(patient => patient.Name).ToList();
+            var sortedByNamePatients = _patients.OrderBy(patient => patient.Name).ToList();
+
+            ShowInfo(sortedByNamePatients);
         }
 
         private void SortByAge()
         {
-            _patients = _patients.OrderBy(patient => patient.Age).ToList();
+            var sortedByAgePatients = _patients.OrderBy(patient => patient.Age).ToList();
+
+            ShowInfo(sortedByAgePatients);
         }
 
         private void FindPatientsByIll()
@@ -93,10 +97,7 @@ namespace ConsoleApp10
 
             var patientsWithIll = _patients.Where(patient => patient.Ilness.ToUpper() == ill).ToList();
 
-            foreach (var patient in patientsWithIll)
-            {
-                patient.ShowInfo();
-            }
+            ShowInfo(patientsWithIll);
 
             if (patientsWithIll.Count == 0)
             {
@@ -104,11 +105,11 @@ namespace ConsoleApp10
             }
         }
 
-        private void ShowInfo()
+        private void ShowInfo(List<Patient> patients)
         {
             int number = 1;
 
-            foreach (Patient patient in _patients)
+            foreach (Patient patient in patients)
             {
                 Console.WriteLine($"Номер: {number++}");
                 patient.ShowInfo();
