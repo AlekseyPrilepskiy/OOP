@@ -1,11 +1,17 @@
-﻿namespace ConsoleApp12
+﻿using System.Linq;
+
+namespace ConsoleApp12
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            SoildersGenerator generator = new SoildersGenerator();
+            SoldiersGenerator generator = new SoldiersGenerator();
             Squad squad = new Squad(generator);
+
+            squad.ShowAllInfo();
+
+            Console.ReadKey();
 
             squad.ShowNameAndRank();
         }
@@ -13,28 +19,39 @@
 
     class Squad
     {
-        private List<Soilder> _soilders;
+        private List<Soldier> _soldiers;
 
-        public Squad(SoildersGenerator soildersGenerator)
+        public Squad(SoldiersGenerator soildersGenerator)
         {
-            _soilders = soildersGenerator.Generate();
+            _soldiers = soildersGenerator.Generate();
         }
 
         public void ShowNameAndRank()
         {
-            var soildersName = _soilders.Select(soildet => soildet.Name).ToList();
-            var soildersRank = _soilders.Select(soildet => soildet.Rank).ToList();
+            var soldiersName = _soldiers.Select(soldier => soldier.Name).ToList();
+            var soldiersRank = _soldiers.Select(soldier => soldier.Rank).ToList();
 
-            for (int i = 0; i < soildersName.Count; i++)
+            for (int i = 0; i < soldiersName.Count; i++)
             {
-                Console.WriteLine($"Имя: {soildersName[i]}. Звание: {soildersRank[i]}");
+                Console.WriteLine($"Имя: {soldiersName[i]}. Звание: {soldiersRank[i]}");
+            }
+        }
+
+        public void ShowAllInfo()
+        {
+            int number = 1;
+
+            foreach (Soldier soldier in _soldiers)
+            {
+                Console.WriteLine($"Номер {number++}");
+                soldier.ShowInfo();
             }
         }
     }
 
-    class Soilder
+    class Soldier
     {
-        public Soilder(GeneratorCharacteristics generatorCharacteristics)
+        public Soldier(GeneratorCharacteristics generatorCharacteristics)
         {
             Name = generatorCharacteristics.GenerateName();
             Weapon = generatorCharacteristics.GenerateWeapon();
@@ -46,29 +63,37 @@
         public string Weapon { get; private set; }
         public string Rank { get; private set; }
         public int ServiceLifeInMonts { get; private set; }
+
+        public void ShowInfo()
+        {
+            Console.WriteLine($"Имя: {Name}");
+            Console.WriteLine($"Оружие: {Weapon}");
+            Console.WriteLine($"Звание: {Rank}");
+            Console.WriteLine($"Месяцы службы: {ServiceLifeInMonts}\n");
+        }
     }
 
-    class SoildersGenerator
+    class SoldiersGenerator
     {
         private GeneratorCharacteristics _generatorCharacteristics;
 
-        public SoildersGenerator()
+        public SoldiersGenerator()
         {
             _generatorCharacteristics = new GeneratorCharacteristics();
         }
 
-        public List<Soilder> Generate()
+        public List<Soldier> Generate()
         {
             int count = 5;
 
-            List<Soilder> soilders = new List<Soilder>();
+            List<Soldier> soldiers = new List<Soldier>();
 
             for (int i = 0; i < count; i++)
             {
-                soilders.Add(new Soilder(_generatorCharacteristics));
+                soldiers.Add(new Soldier(_generatorCharacteristics));
             }
 
-            return soilders;
+            return soldiers;
         }
     }
 
@@ -78,7 +103,7 @@
         private List<string> _surnames;
         private List<string> _patronymics;
         private List<string> _weapons;
-        private List<string> _ranks;
+        private Dictionary<int, string> _monthServiceAndRanks;
 
         public GeneratorCharacteristics()
         {
@@ -104,9 +129,9 @@
             {
                 "Пистолет", "Пистолет - пулемет", "Штурмовая винтовка", "Снайперская винтовка", "Пулемет", "РПГ"
             };
-            _ranks = new()
+            _monthServiceAndRanks = new()
             {
-                "Рядовой", "Ефрейтор", "Сержант", "Лейтенант", "Капитан"
+                { 6, "Рядовой"}, {12, "Ефрейтор"}, {36, "Сержант"}, {96, "Лейтенант"}, {180, "Капитан"}
             };
         }
 
@@ -132,31 +157,17 @@
 
         public string GenerateRank(int monthOfServiceLife)
         {
-            int CorporalPromotionInMonth = 12;
-            int SergantPromotionInMonth = 36;
-            int LieutenantPromotionInMonth = 96;
-            int CaptainPromotionInMonth = 180;
+            string rank = "";
 
-            if (monthOfServiceLife < CorporalPromotionInMonth)
+            foreach (int month in _monthServiceAndRanks.Keys)
             {
-                return _ranks[0];
+                if (monthOfServiceLife > month)
+                {
+                    rank = _monthServiceAndRanks[month];
+                }
             }
-            else if (monthOfServiceLife < SergantPromotionInMonth)
-            {
-                return _ranks[1];
-            }
-            else if (monthOfServiceLife < LieutenantPromotionInMonth)
-            {
-                return _ranks[2];
-            }
-            else if (monthOfServiceLife < CaptainPromotionInMonth)
-            {
-                return _ranks[3];
-            }
-            else
-            {
-                return _ranks[4];
-            }
+
+            return rank;
         }
     }
 
