@@ -50,11 +50,11 @@
 
     class SoildersGenerator
     {
-        private GeneratorCharacteristics generatorCharacteristics;
+        private GeneratorCharacteristics _generatorCharacteristics;
 
         public SoildersGenerator()
         {
-            generatorCharacteristics = new GeneratorCharacteristics();
+            _generatorCharacteristics = new GeneratorCharacteristics();
         }
 
         public List<Soilder> Generate()
@@ -65,7 +65,7 @@
 
             for (int i = 0; i < count; i++)
             {
-                soilders.Add(new Soilder(generatorCharacteristics));
+                soilders.Add(new Soilder(_generatorCharacteristics));
             }
 
             return soilders;
