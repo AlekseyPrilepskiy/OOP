@@ -28,12 +28,11 @@ namespace ConsoleApp12
 
         public void ShowNameAndRank()
         {
-            var soldiersName = _soldiers.Select(soldier => soldier.Name).ToList();
-            var soldiersRank = _soldiers.Select(soldier => soldier.Rank).ToList();
+            var soldiersData = _soldiers.Select(soldier => new { soldier.Name, soldier.Rank }).ToList();
 
-            for (int i = 0; i < soldiersName.Count; i++)
+            foreach (var soldier in soldiersData)
             {
-                Console.WriteLine($"Имя: {soldiersName[i]}. Звание: {soldiersRank[i]}");
+                Console.WriteLine($"Имя: {soldier.Name}, Звание: {soldier.Rank}");
             }
         }
 
